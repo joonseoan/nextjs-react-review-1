@@ -1,9 +1,15 @@
+import Modal from './Modal';
 import NewPost from './NewPost';
 import Post from './Post';
 import classes from './PostList.module.css';
 import { useState, ChangeEvent } from 'react';
 
-function PostList () {
+export interface PostListProps {
+  isModalOpen: boolean;
+  onCloseModal: () => void;
+}
+
+function PostList ({ isModalOpen, onCloseModal }: PostListProps) {
   const [text, setText] = useState<string>('');
   const [author, setAuthor] = useState<string>('');
 
@@ -17,12 +23,16 @@ function PostList () {
 
   return (
     <>
-      <NewPost
-        setTextHandler={setTextHandler}
-        text={text}
-        setAuthorHandler={setAuthorHandler}
-        author={author} 
-      />
+      {isModalOpen && (
+        <Modal onClose={onCloseModal}>
+            <NewPost
+              setTextHandler={setTextHandler}
+              text={text}
+              setAuthorHandler={setAuthorHandler}
+              author={author} 
+            />
+        </Modal>
+      )}
       <ul className={classes.posts}>
         <Post name={author} message={text} />
         <Post name="Manuel" message="I love React!" />

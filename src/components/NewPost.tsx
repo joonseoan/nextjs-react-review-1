@@ -1,54 +1,67 @@
 import classes from './NewPost.module.css';
-import { ChangeEvent, useState } from 'react';
+import { ChangeEvent, FormEvent, SubmitEvent, useState } from 'react';
 
 interface NewPostProps {
-  setTextHandler: (event: ChangeEvent<HTMLTextAreaElement>) => void;
-  text?: string;
-  setAuthorHandler: (event: ChangeEvent<HTMLInputElement>) => void;
-  author?: string;
+  onCancel: () => void;
+  addPost: (text: string, author: string) => void;
 }
 
-function NewPost({
-  setTextHandler,
-  text,
-  setAuthorHandler,
-  author 
-}: NewPostProps) {
-  // const [text, setText] = useState<string>('');
+function NewPost({ onCancel, addPost }: Readonly<NewPostProps>) {
+  const [text, setText] = useState<string>('');
+  const [author, setAuthor] = useState<string>('');
 
-  // function handleOnChange(event: ChangeEvent<HTMLTextAreaElement>) {
-  //   // console.log(event.target.value);
-  //   setText(event.target.value);
-  // }
+  function setTextHandler(event: ChangeEvent<HTMLTextAreaElement>) {
+    setText(event.target.value);
+  }
+
+  function setAuthorHandler(event: ChangeEvent<HTMLInputElement>) {
+    setAuthor(event.target.value);
+  }
+
+  function addPostFunc() {
+    if (text.trim() === '' || author.trim() === '') {
+      return;
+    }
+    addPost(text, author);
+    setText('');
+    setAuthor('');
+  }
+
+  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
+    event.preventDefault();
+    addPostFunc();
+    onCancel();
+  }
 
   return (
-    <form className={classes.form}>
+    <form className={classes.form} onSubmit={handleSubmit}>
       <p>
         <label htmlFor="body">Text</label>
-        <textarea id="body" required rows={3} onChange={setTextHandler}
-          // why it is not required? What is the difference between required and not required?
-          // Even if your state changes later, the textarea will not automatically display the new state.
-
-          // Example:
-
-          // const [text, setText] = useState("");
-
-          // function clear() {
-          //     setText("");
-          // }
-
-          // Clicking clear() will not empty the textarea because React isn't controlling its value.
+        <textarea 
+          id="body" 
+          required 
+          rows={3} 
+          onChange={setTextHandler}
           value={text} 
         />
       </p>
       <p>
         <label htmlFor="name">Your name</label>
-        <input type="text" id="name" required onChange={setAuthorHandler} 
+        <input 
+          type="text" 
+          id="name" 
+          required 
+          onChange={setAuthorHandler} 
           value={author}
         />
+      </p>
+      <p className={classes.actions}>
+        <button type="button" onClick={onCancel}>Cancel</button>
+        <button type="submit">Submit</button>
       </p>
     </form>
   );
 }
 
 export default NewPost;
+

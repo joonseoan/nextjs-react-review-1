@@ -1,3 +1,4 @@
+import { json } from 'node:stream/consumers';
 import Modal from './Modal';
 import NewPost from './NewPost';
 import Post from './Post';
@@ -10,10 +11,38 @@ export interface PostListProps {
 }
 
 function PostList ({ isModalOpen, onCloseModal }: PostListProps) {
-  const [posts, setPosts] = useState<{ text: string; author: string, id: number }[]>([]);
+  const [posts, setPosts] = useState<{ text: string; author: string, id: string }[]>([]);
 
-  function handleAddPost(text: string, author: string) {
-    setPosts((prevPosts) => [{ text, author, id: new Date().getTime() }, ...prevPosts]);
+  async function handleAddPost(text: string, author: string) {
+    try {
+      const response = await fetch('http://localhost:8080/posts', {
+        method: 'POST',
+        body: JSON.stringify({
+          body: text,
+          author,
+        }),
+        headers: {
+          'Content-type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Unable to get response');
+      }
+
+      const { post = {} } = await response.json() ?? { post: {} } as { message: string, post: { body: string, author: string, id: string }};
+      
+      if (!Object.keys(post).length) {
+        throw new Error('Should have key');
+      }
+      
+      setPosts((prev) => [{ text: post.body , author: post.author, id: post.id }, ...prev]);
+
+    } catch(err) {
+      throw new Error(err instanceof Error ? err.message : 'Unable to get posts.');
+    }
+
+    // setPosts((prevPosts) => [{ text, author, id: new Date().getTime() }, ...prevPosts]);
   }
   // const [text, setText] = useState<string>('');
   // const [author, setAuthor] = useState<string>('');
@@ -37,6 +66,8 @@ function PostList ({ isModalOpen, onCloseModal }: PostListProps) {
   //   setAuthor(''); // Clear the author after adding
   // }
 
+  console.log('posts: ', posts)
+
   return (
     <>
       {isModalOpen && (
@@ -52,14 +83,17 @@ function PostList ({ isModalOpen, onCloseModal }: PostListProps) {
           />
         </Modal>
       )}
-      <ul className={classes.posts}>
-        {posts.map(({ text, author, id }) => <Post key={id} name={author} message={text} />)}
-        {/* Example posts */}
-        {/* <Post name={author} message={text} />
-        <Post name="Manuel" message="I love React!" />
-        <Post name="Anna" message="React is awesome!" />
-        <Post name="John" message="React is great!" /> */}
-      </ul>
+      {!!posts.length &&
+        <ul className={classes.posts}>
+          {posts.map(({ text, author, id }) => <Post key={id} name={author} message={text} />)}
+        </ul>
+      }
+      {posts.length === 0 && 
+        <div style={{ textAlign: "center"}}>
+          <h2>There are no posts yet.</h2>
+          <p>Start adding some posts!</p>
+        </div>
+      }
     </>
   ) 
 }

@@ -3,15 +3,38 @@ import Modal from './Modal';
 import NewPost from './NewPost';
 import Post from './Post';
 import classes from './PostList.module.css';
-import { useState, ChangeEvent } from 'react';
+import { useState, ChangeEvent, useEffect } from 'react';
 
 export interface PostListProps {
   isModalOpen: boolean;
   onCloseModal: () => void;
 }
 
+export interface PostObj {
+  body: string;
+  author: string;
+  id: string;
+}
+
 function PostList ({ isModalOpen, onCloseModal }: PostListProps) {
   const [posts, setPosts] = useState<{ text: string; author: string, id: string }[]>([]);
+
+  useEffect(() => {
+    async function fetchPosts() {
+      console.log('working??????????????????????')
+      const response = await fetch('http://localhost:8080/posts');
+      
+      if (!response.ok) {
+        throw new Error('Unable to get response');
+      }
+
+      const data = await response.json() as { posts: PostObj[] };
+      const posts = data.posts.map(({ id, body, author }) => ({ text: body, author, id }));
+      setPosts(posts);
+    }
+
+    fetchPosts();
+  }, []);
 
   async function handleAddPost(text: string, author: string) {
     try {
@@ -30,7 +53,7 @@ function PostList ({ isModalOpen, onCloseModal }: PostListProps) {
         throw new Error('Unable to get response');
       }
 
-      const { post = {} } = await response.json() ?? { post: {} } as { message: string, post: { body: string, author: string, id: string }};
+      const { post } = await response.json() as { message: string, post: PostObj };
       
       if (!Object.keys(post).length) {
         throw new Error('Should have key');
@@ -65,8 +88,6 @@ function PostList ({ isModalOpen, onCloseModal }: PostListProps) {
   //   setText(''); // Clear the text after adding
   //   setAuthor(''); // Clear the author after adding
   // }
-
-  console.log('posts: ', posts)
 
   return (
     <>

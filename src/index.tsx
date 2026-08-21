@@ -2,14 +2,24 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
+import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 import reportWebVitals from './reportWebVitals';
+import NewPost from './components/NewPost';
+
+
+const router = createBrowserRouter([
+  { path: '/', element: <App /> },
+  // This should be done with props. We will do this.
+  // { path: '/create-post', element: <NewPost />},
+  { path: '/render-html', element: <p>This is static HTML page</p>},
+]);
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
 root.render(
   <React.StrictMode>
-    <App />
+    <RouterProvider router={router} /> 
   </React.StrictMode>
 );
 

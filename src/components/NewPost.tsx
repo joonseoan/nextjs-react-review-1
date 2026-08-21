@@ -1,5 +1,5 @@
 import classes from './NewPost.module.css';
-import { ChangeEvent, FormEvent, SubmitEvent, useState } from 'react';
+import { ChangeEvent, FormEvent, useState } from 'react';
 
 interface NewPostProps {
   onCancel: () => void;
@@ -27,7 +27,7 @@ function NewPost({ onCancel, addPost }: Readonly<NewPostProps>) {
     setAuthor('');
   }
 
-  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     addPostFunc();
     onCancel();

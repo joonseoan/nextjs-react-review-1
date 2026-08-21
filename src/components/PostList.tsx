@@ -18,19 +18,22 @@ export interface PostObj {
 
 function PostList ({ isModalOpen, onCloseModal }: PostListProps) {
   const [posts, setPosts] = useState<{ text: string; author: string, id: string }[]>([]);
+  const [isFetching, setIsFetching] = useState<boolean>(false);
 
   useEffect(() => {
     async function fetchPosts() {
-      console.log('working??????????????????????')
+      setIsFetching((pre) => !pre);
       const response = await fetch('http://localhost:8080/posts');
       
       if (!response.ok) {
+        setIsFetching((pre) => !pre);
         throw new Error('Unable to get response');
       }
 
       const data = await response.json() as { posts: PostObj[] };
       const posts = data.posts.map(({ id, body, author }) => ({ text: body, author, id }));
       setPosts(posts);
+      setIsFetching((pre) => !pre);
     }
 
     fetchPosts();
@@ -104,16 +107,19 @@ function PostList ({ isModalOpen, onCloseModal }: PostListProps) {
           />
         </Modal>
       )}
-      {!!posts.length &&
+      {!isFetching && !!posts.length &&
         <ul className={classes.posts}>
           {posts.map(({ text, author, id }) => <Post key={id} name={author} message={text} />)}
         </ul>
       }
-      {posts.length === 0 && 
-        <div style={{ textAlign: "center"}}>
+      {!isFetching && posts.length === 0 && 
+        <div style={{ textAlign: "center" }}>
           <h2>There are no posts yet.</h2>
           <p>Start adding some posts!</p>
         </div>
+      }
+      {
+        isFetching && <div style={{ textAlign: "center" }}><p>Loading...</p></div>
       }
     </>
   ) 

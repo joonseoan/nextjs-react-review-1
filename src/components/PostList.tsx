@@ -1,9 +1,7 @@
-import { json } from 'node:stream/consumers';
-import Modal from './Modal';
-import NewPost from './NewPost';
 import Post from './Post';
 import classes from './PostList.module.css';
 import { useState, ChangeEvent, useEffect } from 'react';
+import { HttpError } from '../error/HttpError'
 
 export interface PostListProps {
   isModalOpen: boolean;
@@ -16,24 +14,58 @@ export interface PostObj {
   id: string;
 }
 
-function PostList ({ isModalOpen, onCloseModal }: PostListProps) {
+function PostList() {
   const [posts, setPosts] = useState<{ text: string; author: string, id: string }[]>([]);
   const [isFetching, setIsFetching] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
   useEffect(() => {
-    async function fetchPosts() {
+    function toggleOpenCloseModal() {
       setIsFetching((pre) => !pre);
-      const response = await fetch('http://localhost:8080/posts');
-      
-      if (!response.ok) {
-        setIsFetching((pre) => !pre);
-        throw new Error('Unable to get response');
-      }
+    }
 
-      const data = await response.json() as { posts: PostObj[] };
-      const posts = data.posts.map(({ id, body, author }) => ({ text: body, author, id }));
-      setPosts(posts);
-      setIsFetching((pre) => !pre);
+    async function fetchPosts() {
+      toggleOpenCloseModal();
+      try {
+        const response = await fetch(
+          'http://localhost:8080/posts'
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            `Failed to fetch posts: ${response.status}` +
+            `${response.statusText}`
+          );
+        }
+
+        const data = await response.json() as { posts: PostObj[] };
+        const posts = data.posts.map(({ id, body, author }) => ({ text: body, author, id }));
+        setPosts(posts);
+      } catch (error) {
+        // Server response
+        if (error instanceof HttpError) {
+          console.error(
+            `HTTP ${error.status}: ${error.message}`
+          )
+
+          if (error.status === 404) {
+            setErrorMessage('Posts could not found');
+          } else {
+            setErrorMessage('Unable to load the posts');
+          }
+        // Server does not response
+        } else if (error instanceof TypeError) {
+          console.error('Network Error: ', error.message);
+          setErrorMessage('Unable to connect to the server');
+        // Any other error
+        } else {
+          // Error type
+          console.error('Unexpected Error: ', error);
+          setErrorMessage('Something went wrong. Please try again.')
+        }
+      } finally {
+        toggleOpenCloseModal();
+      }
     }
 
     fetchPosts();
@@ -53,7 +85,12 @@ function PostList ({ isModalOpen, onCloseModal }: PostListProps) {
       });
 
       if (!response.ok) {
-        throw new Error('Unable to get response');
+        throw new Error(
+          `
+           Failed to upload the post
+           ${response.status}: ${response.statusText}
+          `
+        );
       }
 
       const { post } = await response.json() as { message: string, post: PostObj };
@@ -64,8 +101,24 @@ function PostList ({ isModalOpen, onCloseModal }: PostListProps) {
       
       setPosts((prev) => [{ text: post.body , author: post.author, id: post.id }, ...prev]);
 
-    } catch(err) {
-      throw new Error(err instanceof Error ? err.message : 'Unable to get posts.');
+    } catch (error) {
+      if (error instanceof HttpError) {
+        console.error(`HTTP Error: ${error.status}, ${error.message}`)
+
+        if (error.status === 404) {
+          console.error('Could not find the post upload.');
+          setErrorMessage('Could not find the post upload');
+        } else {
+          console.error(error);
+          setErrorMessage('Unexpected Server Error');
+        }
+      } else if (error instanceof TypeError) {
+        console.error(error);
+        setErrorMessage('Could not reach to the server');
+      } else {
+        console.log(error);
+        setErrorMessage('Unexpected error occurred.');
+      }
     }
 
     // setPosts((prevPosts) => [{ text, author, id: new Date().getTime() }, ...prevPosts]);
@@ -94,19 +147,6 @@ function PostList ({ isModalOpen, onCloseModal }: PostListProps) {
 
   return (
     <>
-      {isModalOpen && (
-        <Modal onClose={onCloseModal}>
-          <NewPost
-            // setTextHandler={setTextHandler}
-            // text={text}
-            // setAuthorHandler={setAuthorHandler}
-            // author={author}
-            onCancel={onCloseModal}
-            addPost={handleAddPost}
-            // addPosts={addPosts} 
-          />
-        </Modal>
-      )}
       {!isFetching && !!posts.length &&
         <ul className={classes.posts}>
           {posts.map(({ text, author, id }) => <Post key={id} name={author} message={text} />)}
@@ -122,7 +162,7 @@ function PostList ({ isModalOpen, onCloseModal }: PostListProps) {
         isFetching && <div style={{ textAlign: "center" }}><p>Loading...</p></div>
       }
     </>
-  ) 
+  )
 }
 
 export default PostList

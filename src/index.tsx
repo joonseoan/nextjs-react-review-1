@@ -1,17 +1,28 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
-import App from './App';
+import Posts from './routes/Posts';
 import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 import reportWebVitals from './reportWebVitals';
-import NewPost from './components/NewPost';
+import NewPost from './routes/NewPost';
+import RootLayout from './routes/RootLayout';
 
 
 const router = createBrowserRouter([
-  { path: '/', element: <App /> },
-  // This should be done with props. We will do this.
-  // { path: '/create-post', element: <NewPost />},
-  { path: '/render-html', element: <p>This is static HTML page</p>},
+  {
+    path: '/', element: <RootLayout />, children: [
+      {
+        path: '/',
+        element: <Posts />,
+        // [IMPORTANT]
+        // If we still want NewPost to be laid over Posts
+        // even though the path URL is different
+        children: [
+          // This should be done with props. We will do this.
+          { path: '/create-post', element: <NewPost />},
+        ]
+      },
+  ]}
 ]);
 
 const root = ReactDOM.createRoot(
